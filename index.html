@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket IO Test</title>
+</head>
+<body>
+  <h1>Socket IO Test</h1>
+
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script type="module">
+  const socket = io();
+
+  socket.on('connect', () => {
+    console.log("Connected to client");
+  })
+
+  // setTimeout(() => {
+  //   socket.disconnect()
+  // }, 5000);
+
+  setTimeout(() => {
+    socket.on('message', (msg, msg2) => {
+      console.log(msg, msg2);
+    })
+  }, 3000);
+
+  socket.on('disconnect', () => {
+    console.log("Disconnected from client");
+  })
+</script>
+</html>
