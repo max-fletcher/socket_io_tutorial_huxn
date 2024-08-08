@@ -21,11 +21,13 @@
   //   socket.disconnect()
   // }, 5000);
 
+  socket.on('message one', (msg, msg2) => {
+    console.log(msg, msg2);
+  })
+
   setTimeout(() => {
-    socket.on('message', (msg, msg2) => {
-      console.log(msg, msg2);
-    })
-  }, 3000);
+    socket.emit('message two', 'Woof woof MF', 'I SAID WE DOGS TODAY !!')
+  }, 4000);
 
   socket.on('disconnect', () => {
     console.log("Disconnected from client");

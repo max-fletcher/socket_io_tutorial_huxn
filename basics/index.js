@@ -19,8 +19,12 @@ io.on('connection', (client) => {
   console.log('A user connected');
 
   setTimeout(() => {
-    client.emit('message', 'Meow meow MF', 'I SAID WE CATS TODAY !!')
+    client.emit('message one', 'Meow meow MF', 'I SAID WE CATS TODAY !!')
   }, 3000);
+
+  client.on('message two', (msg, msg2) => {
+    console.log(msg, msg2);
+  })
 
   client.on('disconnect', () => {
     console.log('User disconnected from the server');
