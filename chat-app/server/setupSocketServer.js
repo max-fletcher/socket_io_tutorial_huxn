@@ -64,28 +64,29 @@ const setupSockerServer = (server) => {
     client.on('join room', async (roomName, user) => {  // To Join a specific room
       await client.join(roomName)
       const sockets = await io.in("room1").fetchSockets();
-      console.log('from outside', roomName, user, sockets);
+      console.log('all sockets', roomName, user, sockets, 'socket count', sockets.length);
     })
 
-    client.on('send message', (roomName, user, message) => {
-      console.log('there');
-      io.to(roomName).emit(`User with id ${user.id} says: ${message}`);
+    client.on('send message', (roomName, message) => {
+      console.log('server received msg', roomName, user, message);
+      io.to(roomName).emit('broadcast message', { by: user, message: `User with id ${user.id} says: ${message}`});
     })
+
+    // Doesn't work
+    // io.of("/").adapter.on("create-room", (room) => { // On creating room
+    //   io.to(room).emit(`User with id {user.id} created room ${room}`);
+    // })
+  
+    // io.of("/").adapter.on("join-room", (room) => { // On joining room
+    //   io.to(room).emit(`User with id {user.id} joined room ${room}`);
+    // })
+  
+    // io.of("/").adapter.on("leave-room", (room) => { // On joining room
+    //   io.to(room).emit(`User with id {user.id} left room ${room}`);
+    // })
 
     client.on('disconnect', () => disconnect(client))
   });
-
-  io.of("/").adapter.on("create-room", (room) => { // On creating room
-    io.to(room).emit(`User with id {user.id} created room ${room}`);
-  })
-
-  io.of("/").adapter.on("join-room", (room) => { // On joining room
-    io.to(room).emit(`User with id {user.id} joined room ${room}`);
-  })
-
-  io.of("/").adapter.on("leave-room", (room) => { // On joining room
-    io.to(room).emit(`User with id {user.id} left room ${room}`);
-  })
 }
 
 export default setupSockerServer

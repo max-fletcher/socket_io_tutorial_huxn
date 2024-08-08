@@ -9,48 +9,77 @@
   <h1>Socket IO Test</h1>
   <input type="text" id="userId" placeholder="Enter id">
   <input type="text" id="userName" placeholder="Enter name">
+  <br>
   <button onclick="connectToServer()">Connect To Server</button>
-  <button onclick="joinRoom('room1')">Join Room</button>
+  <br>
+  <input type="text" id="roomName" placeholder="Enter room name">
+  <button onclick="joinRoom()">Join Room</button>
+  <br>
+  <input type="text" id="message" placeholder="Enter message">
   <button onclick="sendMessage('room1')">Send Message</button>
+  <br>
+  <button onclick="logUser()">Log User</button>
 
 </body>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  let server = null
-  let user = null
+  var server = null
+  var auth = null
+  var user = null
   function connectToServer(){
+    const id = document.getElementById("userId").value
+    const name = document.getElementById("userName").value
+
+    if(!id && !name){
+      alert('No id or name provided')
+      return
+    }
+
     user = {
+      id: id,
+      name: name,
+    }
+
+    auth = {
       auth: {
-        user:{
-          id: document.getElementById("userId").value,
-          name: document.getElementById("userName").value,
-        }
+        user: user
       }
     }
 
-    server = io('ws://localhost:4001', user);
+    server = io('ws://localhost:4001', auth)
+
+    server.on('connect', () => {
+      console.log("Connected to client");
+    })
+
+    server.on('disconnect', () => {
+      auth = user = null
+      console.log("Disconnected from client")
+    })
+
+    server.on('broadcast message', (msg) => {
+      console.log('received msg', msg);
+    });
+
     document.getElementById("userId").value = ""
     document.getElementById("userName").value = ""
   }
 
-  server.on('connect', () => {
-    console.log("Connected to client");
-  })
+  function logUser(){
+    console.log('logged user', user)
+  }
 
-  server.on('disconnect', () => {
-    user = null
-    console.log("Disconnected from client");
-  })
-
-  function joinRoom(roomName){
+  function joinRoom(){
+    const roomName = document.getElementById("roomName").value
     server.emit("join room", roomName, user)
-    console.log("joined room", roomName, user);
-    
+    console.log("joined room", roomName, user)
   }
 
   function sendMessage(roomName){
-    server.emit("send message", roomName, user, "Henlo Bonehead !!")
-    console.log("sennt message", roomName, user, "Henlo Bonehead !!")
+    const msg = document.getElementById("message").value
+    server.emit("send message", roomName, user, msg)
+    console.log("sent message", roomName, user, msg)
+    document.getElementById("message").value = ""
   }
 </script>
 </html>
