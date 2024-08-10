@@ -4,12 +4,16 @@ import http from "http"
 import { fileURLToPath } from "url"
 import { dirname, join } from "path"
 import { Server } from "socket.io"
-import setupSockerServer from "./setupSocketServer.js"
+import setupSockerServer, { allowedOrigins } from "./setupSocketServer.js"
 
 // 2. Instances
 const app = express()
 const server = http.createServer(app)
-const io = new Server(server)
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins
+  }
+})
 
 // 3. Serving HTML File
 const __dirname = dirname(fileURLToPath(import.meta.url))

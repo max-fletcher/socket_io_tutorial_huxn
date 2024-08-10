@@ -2,8 +2,8 @@ import { Server as SocketIoServer } from "socket.io"
 
 export const allowedOrigins = [
   'https://www.yoursite.com',
-  'http://127.0.0.1:3000',
-  'http://localhost:3000'
+  'http://127.0.0.1:5173',
+  'http://localhost:5173'
 ];
 
 const socketIoServerOptions = {
@@ -25,13 +25,12 @@ const setupSockerServer = (server) => {
 
   const disconnect = (client) => {
     const user = userSockets.get(client.id)
-    console.log('disconnect client with id', client.id);
     if(user){
       userSockets.delete(client.id)
       console.log(`Socket Id - ${client.id} : User with Id - ${user.id} has disconnected from socket server`)
       console.log("userSockets", userSockets)
     }
-    console.log('User disconnected from the server');
+    console.log('disconnect client with id', client.id);
   }
 
   io.on('connection', (client) => {
