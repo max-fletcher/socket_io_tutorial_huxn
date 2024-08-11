@@ -17,12 +17,29 @@ function App() {
     if(isConnected){
       console.log('inside use effect',socketServer)
       console.log('Effect connecting...')
+
+      function connect() {
+        console.log("Connected to server")
+      }
+
+      function disconnect() {
+        console.log("Disconnected to server")
+      }
+
       function onSocketEvent(value) {
         setSocketEvents(previous => [...previous, value]);
       }
-      socketServer.on('connect', console.log("Connected to server"))
-      socketServer.on('disconnect', console.log("Disconnected from server"))
+
+      // function broadcastMessageToClient(value) {
+      //   setSocketEvents(previous => [...previous, value]);
+      // }
+
+      socketServer.on('connect', connect)
+      socketServer.on('disconnect', disconnect)
       socketServer.on('socketEvent', onSocketEvent)
+      socketServer.on('broadcast message to client', (by, message) => {
+        console.log('Server received msg', `Id ${by.id} and userName ${by.name}` , `${message}`);
+      })
       socketServer.connect()
     }
     else{
@@ -31,6 +48,7 @@ function App() {
         socketServer.off('connect')
         socketServer.off('disconnect')
         socketServer.off('socketEvent')
+        socketServer.off('broadcast message to client')
         socketServer.disconnect()
         setSocketServer(null)
       }
@@ -40,10 +58,11 @@ function App() {
         socketServer.off('connect')
         socketServer.off('disconnect')
         socketServer.off('socketEvent')
+        socketServer.off('broadcast message to client')
         setSocketServer(null)
       }
     }
-  }}, [socketUrl, isConnected,socketServer])
+  }}, [socketUrl, isConnected, socketServer])
 
   function connect() {
     console.log('connecting...')
@@ -60,6 +79,7 @@ function App() {
     console.log('disconnecting...')
     setUserId('')
     setUserName('')
+    setRoomName('')
     setIsConnected(false)
   }
 
@@ -72,7 +92,6 @@ function App() {
 
     socketServer.emit("join room", roomName, { id: userId, name:userName })
     console.log("joined room", roomName, { id: userId, name:userName })
-    setRoomName('')
   }
 
   const [message, setMessage] = useState('')
@@ -82,7 +101,7 @@ function App() {
     else if(message === '')
       alert('Message is empty')
 
-    socketServer.emit("send message", roomName, message)
+    socketServer.emit("send message to server", roomName, message)
     console.log("sent message", roomName, message)
     setMessage('')
   }

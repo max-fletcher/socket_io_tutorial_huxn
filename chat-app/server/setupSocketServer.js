@@ -52,6 +52,10 @@ const setupSockerServer = (server) => {
         userSockets.set(client.id, user)
         console.log(`Socket Id - ${client.id} assigned to User with Id - ${user.id}`)
       }
+      else{
+        console.log(`Duplicate entry for userId - ${user.id} & username - ${user.name}`)
+        client.disconnect(client)
+      }
     }
     else{
       console.log(`User Id not provided. Disconnecting...`)
@@ -68,9 +72,9 @@ const setupSockerServer = (server) => {
       console.log('all sockets', roomName, user, sockets, 'socket count', sockets.length);
     })
 
-    client.on('send message', (roomName, message) => {
-      console.log('server received msg', roomName, user, message);
-      io.to(roomName).emit('broadcast message', { by: user, message: `User with id ${user.id} says: ${message}`});
+    client.on('send message to server', (roomName, message) => {
+      console.log('server received msg', roomName, user, message)
+      io.to(roomName).emit('broadcast message to client', user, `User with id ${user.id} says: ${message}`);
     })
 
     // Doesn't work
