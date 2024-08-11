@@ -1,87 +1,89 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
-import { io } from 'socket.io-client';
-// import { socketServer } from './utils/socket'
+import { socketServerInit } from './utils/socket'
 
 function App() {
-  let socketServer = useRef(null); // Socket Ref
-  const socketUrl = process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:4001';
+  const [socketServer,setSocketServer] = useState(null)
+  const socketUrl = process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:4001'
 
   // Establish socket connection
   const [isConnected, setIsConnected] = useState(false)
   const [socketEvents, setSocketEvents] = useState([])
   const [userId, setUserId] = useState('')
   const [userName, setUserName] = useState('')
-  const [userData, setUserData] = useState({ id: '', name: '' })
 
   useEffect(() => {
+    console.log('use effect',{socketUrl, isConnected}, socketServer)
     if(isConnected){
-      console.log('connecting...')
-      if(!userId.length && userName.length){
-        setIsConnected(false)
-        return
-      }
-
-      setUserData({ id: userId, name: userName })
-      socketServer.current = io(socketUrl, {auth: { user: userData }})
-
+      console.log('inside use effect',socketServer)
+      console.log('Effect connecting...')
       function onSocketEvent(value) {
         setSocketEvents(previous => [...previous, value]);
       }
-
-      socketServer.current.on('connect', console.log("Connected to server"))
-      socketServer.current.on('disconnect', console.log("Disconnected from server"))
-      socketServer.current.on('socketEvent', onSocketEvent)
-
-      socketServer.current.connect()
-      setUserId('')
-      setUserName('')
+      socketServer.on('connect', console.log("Connected to server"))
+      socketServer.on('disconnect', console.log("Disconnected from server"))
+      socketServer.on('socketEvent', onSocketEvent)
+      socketServer.connect()
     }
     else{
-      console.log('disconnecting...')
-      if(socketServer.current){
-        socketServer.current.disconnect()
-        setUserId('')
-        setUserName('')
+      console.log('Effect disconnecting...')
+      if(socketServer){
+        socketServer.off('connect')
+        socketServer.off('disconnect')
+        socketServer.off('socketEvent')
+        socketServer.disconnect()
+        setSocketServer(null)
       }
-    }
 
     return () => {
-      if(socketServer.current){
-        socketServer.current.off('connect')
-        socketServer.current.off('disconnect')
-        socketServer.current.off('socketEvent')
-        socketServer.current = null
+      if(socketServer){
+        socketServer.off('connect')
+        socketServer.off('disconnect')
+        socketServer.off('socketEvent')
+        setSocketServer(null)
       }
     }
-  }, [socketUrl, userId, userName, userData, isConnected])
+  }}, [socketUrl, isConnected,socketServer])
 
   function connect() {
+    console.log('connecting...')
+    if(!userId.length && !userName.length){
+      setIsConnected(false)
+      alert('Username and Id is empty')
+      return
+    }
+    setSocketServer(socketServerInit({user: { id: userId, name: userName }}))
     setIsConnected(true)
   }
 
   function disconnect() {
+    console.log('disconnecting...')
+    setUserId('')
+    setUserName('')
     setIsConnected(false)
   }
 
   const [roomName, setRoomName] = useState('')
   const enterRoom = () => {
-    if(roomName === '')
+    if(!socketServer)
+      alert('Socket not connected') 
+    else if(roomName === '')
       alert('Room name is empty')
 
-    socketServer.current.emit("join room", roomName, userData)
-    console.log("joined room", roomName, userData)
+    socketServer.emit("join room", roomName, { id: userId, name:userName })
+    console.log("joined room", roomName, { id: userId, name:userName })
     setRoomName('')
   }
 
-
   const [message, setMessage] = useState('')
   const sendMessage = () => {
-    if(message === '')
+    if(!socketServer)
+      alert('Socket not connected')
+    else if(message === '')
       alert('Message is empty')
 
-    socketServer.current.emit("send message", roomName, userData, message)
-    console.log("sent message", roomName, userData, message)
+    socketServer.emit("send message", roomName, message)
+    console.log("sent message", roomName, message)
     setMessage('')
   }
 
@@ -107,12 +109,13 @@ function App() {
 
       <input type="text" onChange={(e) => {setRoomName(e.target.value)}} value={roomName} placeholder='Enter Room Name.' />
       <br />
-      <button onClick={ enterRoom } disabled={isConnected}>Enter room</button>
+
+      <button onClick={ enterRoom } disabled={!isConnected}>Enter room</button>
       <br />
 
       <input type="text" onChange={(e) => {setMessage(e.target.value)}} value={message} placeholder='Enter Message' />
       <br />
-      <button onClick={ sendMessage } disabled={isConnected}>Send Message</button>
+      <button onClick={ sendMessage } disabled={!isConnected}>Send Message</button>
     </>
   )
 }

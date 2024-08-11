@@ -33,7 +33,7 @@ const setupSockerServer = (server) => {
     console.log('disconnect client with id', client.id);
   }
 
-  io.on('connection', (client) => {
+  io.on('connection', async (client) => {
     console.log('A user connected to the socket server');
 
     const user = client.handshake.auth.user // runs when a client attempts to connect to the socket and peforms a handshake
@@ -52,13 +52,15 @@ const setupSockerServer = (server) => {
         userSockets.set(client.id, user)
         console.log(`Socket Id - ${client.id} assigned to User with Id - ${user.id}`)
       }
-      console.log("userSockets", userSockets)
     }
     else{
       console.log(`User Id not provided. Disconnecting...`)
       client.disconnect(client)
-      console.log("userSockets", userSockets)
     }
+
+    console.log("userSockets", userSockets)
+    const allConnections = await io.fetchSockets()
+    console.log('allConnections', allConnections.length)
 
     client.on('join room', async (roomName, user) => {  // To Join a specific room
       await client.join(roomName)
