@@ -14,6 +14,8 @@ const socketIoServerOptions = {
   }
 }
 
+const socketPort = 4002
+
 console.log(socketIoServerOptions);
 
 // Setup the server
@@ -34,14 +36,14 @@ const setupSockerServer = (server) => {
   }
 
   io.on('connection', async (client) => {
-    console.log('A user connected to the socket server');
+    console.log('A user connected to the socket server')
 
     const user = client.handshake.auth.user // runs when a client attempts to connect to the socket and peforms a handshake
     if(user){
       console.log("handshake", client.handshake.auth, client.handshake.auth.user.id, client.handshake.auth.user.name);
 
       let alreadyConnected = false
-      for(var [key, value] of userSockets){
+      for(const [value] of userSockets){
         if(value.id === user.id){
           alreadyConnected = true
           break;
@@ -54,27 +56,33 @@ const setupSockerServer = (server) => {
       }
       else{
         console.log(`Duplicate entry for userId - ${user.id} & username - ${user.name}`)
-        client.disconnect(client)
+        client.disconnect()
       }
     }
     else{
       console.log(`User Id not provided. Disconnecting...`)
-      client.disconnect(client)
+      client.disconnect()
     }
 
     console.log("userSockets", userSockets)
     const allConnections = await io.fetchSockets()
     console.log('allConnections', allConnections.length)
 
-    client.on('join room', async (roomName, user) => {  // To Join a specific room
+    client.on('joinRoom', async (roomName, user) => {  // To Join a specific room
       await client.join(roomName)
-      const sockets = await io.in("room1").fetchSockets();
+      const sockets = await io.in(roomName).fetchSockets();
       console.log('all sockets', roomName, user, sockets, 'socket count', sockets.length);
     })
 
-    client.on('send message to server', (roomName, message) => {
+    client.on('leaveRoom', async (roomName, user) => {  // To Join a specific room
+      await client.leave(roomName)
+      const sockets = await io.in(roomName).fetchSockets();
+      console.log('all sockets', roomName, user, sockets, 'socket count', sockets.length);
+    })
+
+    client.on('sendMessageToServer', (roomName, message) => {
       console.log('server received msg', roomName, user, message)
-      io.to(roomName).emit('broadcast message to client', user, `User with id ${user.id} says: ${message}`);
+      io.to(roomName).emit('broadcastMessageToClient', user, `User with id ${user.id} says: ${message}`)
     })
 
     // Doesn't work
@@ -92,6 +100,8 @@ const setupSockerServer = (server) => {
 
     client.on('disconnect', () => disconnect(client))
   });
+
+  io.listen(socketPort);
 }
 
 export default setupSockerServer

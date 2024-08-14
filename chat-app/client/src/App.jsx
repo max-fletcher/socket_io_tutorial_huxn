@@ -4,7 +4,6 @@ import { socketServerInit } from './utils/socket'
 
 function App() {
   const [socketServer,setSocketServer] = useState(null)
-  const socketUrl = process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:4001'
 
   // Establish socket connection
   const [isConnected, setIsConnected] = useState(false)
@@ -13,7 +12,7 @@ function App() {
   const [userName, setUserName] = useState('')
 
   useEffect(() => {
-    console.log('use effect',{socketUrl, isConnected}, socketServer)
+    console.log('use effect',{isConnected}, socketServer)
     if(isConnected){
       console.log('inside use effect',socketServer)
       console.log('Effect connecting...')
@@ -30,15 +29,15 @@ function App() {
         setSocketEvents(previous => [...previous, value]);
       }
 
-      // function broadcastMessageToClient(value) {
-      //   setSocketEvents(previous => [...previous, value]);
-      // }
+      function broadcastMessageToClient(by, message) {
+        console.log('Server received msg', `Id ${by.id} and userName ${by.name}` , `${message}`);
+      }
 
       socketServer.on('connect', connect)
       socketServer.on('disconnect', disconnect)
       socketServer.on('socketEvent', onSocketEvent)
-      socketServer.on('broadcast message to client', (by, message) => {
-        console.log('Server received msg', `Id ${by.id} and userName ${by.name}` , `${message}`);
+      socketServer.on('broadcastMessageToClient', (by, message) => {
+        broadcastMessageToClient(by, message)
       })
       socketServer.connect()
     }
@@ -48,7 +47,7 @@ function App() {
         socketServer.off('connect')
         socketServer.off('disconnect')
         socketServer.off('socketEvent')
-        socketServer.off('broadcast message to client')
+        socketServer.off('broadcastMessageToClient')
         socketServer.disconnect()
         setSocketServer(null)
       }
@@ -58,11 +57,11 @@ function App() {
         socketServer.off('connect')
         socketServer.off('disconnect')
         socketServer.off('socketEvent')
-        socketServer.off('broadcast message to client')
+        socketServer.off('broadcastMessageToClient')
         setSocketServer(null)
       }
     }
-  }}, [socketUrl, isConnected, socketServer])
+  }}, [isConnected, socketServer])
 
   function connect() {
     console.log('connecting...')
@@ -84,14 +83,31 @@ function App() {
   }
 
   const [roomName, setRoomName] = useState('')
+  const [joinedRoom, setJoinedRoom] = useState('')
   const enterRoom = () => {
     if(!socketServer)
       alert('Socket not connected') 
     else if(roomName === '')
       alert('Room name is empty')
+    else if(joinedRoom.length > 0)
+      alert('You already entered a room. Leave it to join another room.')
 
-    socketServer.emit("join room", roomName, { id: userId, name:userName })
+    socketServer.emit("joinRoom", roomName, { id: userId, name:userName })
+    setJoinedRoom(roomName)
     console.log("joined room", roomName, { id: userId, name:userName })
+  }
+
+  const leaveRoom = () => {
+    if(!socketServer)
+      alert('Socket not connected') 
+    else if(roomName === '')
+      alert('Room name is empty')
+    else if(joinedRoom.length === 0)
+      alert('You haven\'t joined any rooms yet')
+
+    socketServer.emit("leaveRoom", roomName, { id: userId, name:userName })
+    setJoinedRoom('')
+    console.log("left room", roomName, { id: userId, name:userName })
   }
 
   const [message, setMessage] = useState('')
@@ -101,7 +117,7 @@ function App() {
     else if(message === '')
       alert('Message is empty')
 
-    socketServer.emit("send message to server", roomName, message)
+    socketServer.emit("sendMessageToServer", roomName, message)
     console.log("sent message", roomName, message)
     setMessage('')
   }
@@ -109,7 +125,9 @@ function App() {
   return (
     <>
       <h1>Connection state:</h1>
-      <p>State: { '' + isConnected }</p>
+      <p>Connected: { '' + isConnected }</p>
+      <p>Room: {''}{joinedRoom.length > 0 ? joinedRoom : 'Not joined'}</p>
+      <p>{  }</p>
 
       <h1>Socket events:</h1>
       <ul>
@@ -129,7 +147,8 @@ function App() {
       <input type="text" onChange={(e) => {setRoomName(e.target.value)}} value={roomName} placeholder='Enter Room Name.' />
       <br />
 
-      <button onClick={ enterRoom } disabled={!isConnected}>Enter room</button>
+      <button onClick={ enterRoom } disabled={!isConnected || joinedRoom.length > 0}>Enter room</button>
+      <button onClick={ leaveRoom } disabled={!isConnected || joinedRoom.length === 0}>Leave room</button>
       <br />
 
       <input type="text" onChange={(e) => {setMessage(e.target.value)}} value={message} placeholder='Enter Message' />
